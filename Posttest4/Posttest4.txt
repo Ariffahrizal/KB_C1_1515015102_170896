@@ -1,0 +1,132 @@
+DOMAINS   
+   nama,jender,pekerjaan,benda,alasan,zat = symbol
+   umur=integer
+   
+PREDICATES
+   nondeterm orang(nama, umur, jender, pekerjaan)
+   nondeterm selingkuh(nama, nama)   terbunuh_dengan(nama, benda)   terbunuh(nama)   
+   nondeterm pembunuh(nama)   motif(alasan)   ternodai(nama, zat)   milik(nama, benda)   
+   nondeterm cara_kerja_mirip(benda, benda)   
+   nondeterm kemungkinan_milik(nama, benda)  
+   nondeterm dicurigai(nama) 
+   
+/* * * Fakta-fakta tentang pembunuhan * * */ 
+CLAUSES 
+
+  orang(budi,55,m,tukang_kayu).
+  orang(aldi,25,m,pemain_sepak_bola).   
+  orang(aldi,25,m,tukang_jagal).
+  orang(joni,25,m,pencopet).  
+  
+  selingkuh(ina,joni).
+  selingkuh(ina,budi).   
+  selingkuh(siti,joni).  
+  terbunuh_dengan(siti,pentungan).   
+  terbunuh(siti).  
+  
+  motif(uang).   
+  motif(cemburu).   
+  motif(dendam).  
+  ternodai(budi, darah).   
+  ternodai(siti, darah).   
+  ternodai(aldi, lumpur).   
+  ternodai(joni, coklat).   
+  ternodai(ina, coklat).  
+  milik(budi,kaki_palsu).   
+  milik(joni,pistol).  
+  
+/* * * Basis Pengetahuan * * */ 
+  cara_kerja_mirip(kaki_palsu, pentungan).   
+  cara_kerja_mirip(balok, pentungan).   
+  cara_kerja_mirip(gunting, pisau).   
+  cara_kerja_mirip(sepatu_bola, pentungan).  
+  
+  kemungkinan_milik(X,sepatu_bola):-  
+  	orang(X,_,_,pemain_sepak_bola).   
+  kemungkinan_milik(X,gunting):-  
+  	orang(X,_,_,pekerja_salon).   
+  kemungkinan_milik(X,Benda):-  
+  	milik(X,Benda).  
+  	
+/* * * * * * * * * * * * * * * * * * dicurigai semua orang yang memiliki senjata yang kerjanya mirip dengan senjata penyebab siti terbunuh.  * * * * * * * * * * * * * * * * * * */  
+  dicurigai(X):-
+  	terbunuh_dengan(siti,Senjata) ,
+  	cara_kerja_mirip(Benda,Senjata) ,  
+  	kemungkinan_milik(X,Benda).  
+  	
+/* * * * * * * * * * * * * * * * * * dicurigai laki-laki yang selingkuh dengan siti. * * * * * * * * * * * * * * * * */  
+  dicurigai(X):-  
+  	motif(cemburu),  
+  	orang(X,_,m,_),  
+  	selingkuh(siti,X).  
+  	
+/* * * * * * * * * * * * * * * * * * dicurigai perempuan yang selingkuh dengan laki-laki yang juga selingkuh dengan siti * * * * * * * * * * * * * * * * */  
+  dicurigai(X):-  
+  	motif(cemburu),  
+  	orang(X,_,f,_),  
+  	selingkuh(X,Lakilaki),  
+  	selingkuh(siti,Lakilaki).  
+  	
+/* * * * * * * * * * * * * * * * * * * * * * * * * * *  * dicurigai pencopet yang mempunyai motif uang.     *  * * * * * * * * * * * * * * * * * * * * * * * * * * */  
+  dicurigai(X):-  
+  	motif(uang),  
+  	orang(X,_,_,pencopet).  
+  	
+  pembunuh(Pembunuh):-  
+  	orang(Pembunuh,_,_,_),  
+  	terbunuh(Terbunuh),  
+  	Terbunuh <> Pembunuh, 
+  	 dicurigai(Pembunuh),  
+  	 ternodai(Pembunuh,Zat),  
+  	 ternodai(Terbunuh,Zat).  
+  	 
+GOAL   
+  pembunuh(X).
+  
+/*Langkah demi langkah bagaimana Visual Prolog mencari solusi dari goal yang diberikan. 
+
+1. Goal yang diminta adalah predikat pembunuh dengan variabel bebas X. 
+Untuk mencoba menjawab panggilan ini, Visual Prolog mencari di program pada section Clausa untuk pencocokan. 
+Ditemukan kecocokan dengan klausa pembunuh(Pembunuh), dan variabel X diunifikasikan dengan variabel Pembunuh.  
+2. Kemudian, Visual Prolog berusaha untuk memenuhi bagian body dari rule. Untuk melakukannya, 
+Visual Prolog memanggil subgoal yang pertama pada body dari rule tersebut yaitu orang(Pembunuh,_,_,_), 
+dan mencari pencocokan untuk panggilan ini. Ditemukan pencocokan dengan fakta pertama dari klausa relasi orang. 
+Pada titik ini Pembunuh diikat dengan value budi karena pada subgoal tersebut mengabaikan isinya.
+Kemudian Visual Prolog menset titik lacakbalik pada fakta orang(budi,_,_,_). 
+3. Dengan Pembunuh diikat pada nilai budi, Visual Prolog membuat panggilan untuk subgoal yang kedua yaitu terbunuh(Terbunuh), 
+dan mencari pencocokan. Dan menemukan dengan fakta yang pertama terbunuh(siti). Terbunuh diikat dengan nilai siti 
+dan Prolog menset titik lacakbalik pada terbunuh(siti). 
+4. Kemudian Prolog mencoba untuk memenuhi subgoal yang ketiga yaitu, Terbunuh <> Pembunuh. 
+Karena Terbunuh dengan nilai siti tidak sama dengan Pembunuh dengan nilai budi maka dilanjut ke klausa selanjutnya.  
+5. Kemudian Prolog mencoba untuk memenuhi subgoal yang keempat yaitu, dicurigai(Pembunuh)
+dan mencari pencocokan untuk panggilan ini. Ditemukan pencocokan dengan fakta pertama dari klausa relasi dicurigai(X). 
+dan variabel Pembunuh diunifikasikan dengan variabel X.
+6. Kemudian, Visual Prolog berusaha untuk memenuhi bagian body dari rule. Untuk melakukannya, 
+Visual Prolog memanggil syarat yang pertama pada body dari rule tersebut yaitu terbunuh_dengan(siti,Senjata), 
+dan mencari pencocokan untuk panggilan ini. Ditemukan pencocokan dengan fakta pertama dari klausa relasi terbunuh_dengan. 
+Pada titik ini Pembunuh diikat dengan value pentungan karena fakta pertamanya adalah terbunuh_dengan(siti,pentungan).
+Kemudian Visual Prolog menset titik lacakbalik pada fakta terbunuh_dengan(siti,pentungan).
+7. Kemudian Visual Prolog memanggil syarat yang kedua pada body dari rule tersebut yaitu cara_kerja_mirip(Benda,Senjata), 
+dan mencari pencocokan untuk panggilan ini dimana tadi diketahui nilai dari senjata adalah pentungan. 
+Ditemukan pencocokan dengan fakta pertama dari klausa relasi cara_kerja_mirip. Pada titik ini Benda diikat dengan value kaki_palsu 
+karena fakta pertamanya adalah cara_kerja_mirip(kaki_palsu,pentungan), Kemudian Visual Prolog menset titik lacakbalik pada fakta cara_kerja_mirip(kaki_palsu,pentungan).
+7. Kemudian Visual Prolog memanggil syarat terakhir pada body dari rule tersebut yaitu kemungkinan_milik(X,Benda), 
+dan mencari pencocokan untuk panggilan ini dimana tadi diketahui nilai dari X adalah budi dan Benda adalah kaki_palsu. 
+dimana klausa ini punya syarat milik(X,Benda) dan Ditemukan pencocokan dengan fakta pertama milik(budi,kaki_palsu) dan menset titik lacak balik.
+8. setelah subgoal bersyarat telah selesai, kemudian Visual Prolog mencoba memenuhi subgoal yang kelima yaitu ternodai(Pembunuh,Zat), 
+dan mencari pencocokan untuk panggilan ini dimana tadi diketahui nilai dari Pembunuh adalah budi. 
+Dan menemukan dengan fakta yang pertama ternodai(budi,darah). lalu Zat diikat dengan nilai darah
+dan Prolog menset titik lacakbalik pada ternodai(budi,darah).  
+9. Kemudian Visual Prolog mencoba memenuhi subgoal yang kelima yaitu ternodai(Terbunuh,Zat), 
+dan mencari pencocokan untuk panggilan ini dimana tadi diketahui nilai dari Terbunuh adalah siti dan Zat adalah darah. 
+Panggilannya menjadi ternodai(siti, darah). Pencarian kembali dimulai dari bagian atas program karena merupakan panggilan baru 
+dan menemukan kecocokan dengan fakta yang ada dan subgoal terakhir sukses (true). 
+10. Pada titik ini, body dari rule pembunuh dapat dipenuhi. Visual Prolog mengembalikan nilai X pada pemanggil (goal) pembunuh(Pembunuh). 
+Karena X diikat nilainya ke Pembunuh dan Pembunuh diikat nilainya budi, maka sekarang X juga diikat nilainya ke budi pada goal tersebut. 
+Visual Prolog kan menampilkan jawaban:  
+
+X=budi 
+1 Solution.  
+
+dan program berhenti dengan sukses. 
+*/
